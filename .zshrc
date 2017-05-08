@@ -98,6 +98,4 @@ source $ZSH/oh-my-zsh.sh
 
 alias 'git sup'="git submodule update --recursive"
 
-alias ss="'/Applications/SelectStarter.app/Contents/MacOS/SelectStarter'"
-
 export ALTERNATE_EDITOR=""
