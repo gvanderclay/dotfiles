@@ -1,5 +1,5 @@
 # Path to your oh-my-zsh installation.
-export ZSH=/Users/gclay/.oh-my-zsh
+export ZSH=$HOME/.oh-my-zsh
 
 # Set name of the theme to load.
 # Look in ~/.oh-my-zsh/themes/
@@ -97,8 +97,6 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 alias 'git sup'="git submodule update --recursive"
-
-eval "$(nodenv init -)"
 
 alias ss="'/Applications/SelectStarter.app/Contents/MacOS/SelectStarter'"
 
