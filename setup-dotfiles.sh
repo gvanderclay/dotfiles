@@ -5,14 +5,16 @@ git clone --bare git@github.com:gvanderclay/dotfiles.git "$HOME"/.dotfiles
 function config {
     git --git-dir="$HOME"/.dotfiles/ --work-tree="$HOME" "$@"
 }
+
+backup_dir="$HOME/.dotfiles-backup"
 # create a directory to backup existing dotfiles to
-mkdir -p .dotfiles-backup
+mkdir -p "$backup_dir"
 config checkout
 if config checkout; then
     echo "Checked out dotfiles from git@github.com:gvanderclay/dotfiles.git"
 else
-    echo "Moving existing dotfiles to ~/.dotfiles-backup"
-    config checkout 2>&1 | grep -E "\s+\." | awk '{print $1}' | xargs -I{} mv {} .dotfiles-backup/{}
+    echo "Moving existing dotfiles to $backup_dir"
+    config checkout 2>&1 | grep -E "\s+\." | awk '{print $1}' | xargs -I{} mv {} "$backup_dir"/{}
 fi
 # checkout dotfiles from repo
 config checkout
