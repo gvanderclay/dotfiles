@@ -74,11 +74,12 @@ plugins=(
   brew
   xcode
   docker
-  asdf
+  mise
   git
   autojump
   thefuck
   fzf
+  mise
   zsh-autosuggestions
   zsh-syntax-highlighting
 )
@@ -125,6 +126,7 @@ export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
 export PATH=$PATH:$HOME/.local/bin
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 export PATH="/opt/homebrew/bin:$PATH"
+export PATH="/Applications/Android Studio.app/Contents/MacOS:$PATH"
 
 alias frick=fuck
 
@@ -142,7 +144,8 @@ function gitPullAndMerge() {
   git checkout $current_branch
   git merge $1
 }
-source "${XDG_CONFIG_HOME:-$HOME/.config}/asdf-direnv/zshrc"
+
+alias gpam='gitPullAndMerge'
 
 # pnpm
 export PNPM_HOME="/Users/gvanderclay/Library/pnpm"
@@ -155,3 +158,9 @@ esac
 # make sure the --git-dir is the same as the
 # directory where you created the repo above.
 alias config="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
+
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/Users/gvanderclay/.lmstudio/bin"
+# End of LM Studio CLI section
+
