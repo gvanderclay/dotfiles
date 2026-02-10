@@ -16,7 +16,7 @@ ZSH_THEME="robbyrussell"
 # If set to an empty array, this variable will have no effect.
 # ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
 
-# Uncomment the following line to use case-sensitive completion.rm -f ~/.p10k.zsh
+# Uncomment the following line to use case-sensitive completion.
 # CASE_SENSITIVE="true"
 
 # Uncomment the following line to use hyphen-insensitive completion.
@@ -76,10 +76,10 @@ plugins=(
   docker
   mise
   git
+  gradle
   autojump
   thefuck
   fzf
-  mise
   zsh-autosuggestions
   zsh-syntax-highlighting
 )
@@ -105,62 +105,149 @@ export AWS_PAGER=""
 # Compilation flags
 # export ARCHFLAGS="-arch x86_64"
 
-# Set personal aliases, overriding those provided by oh-my-zsh libs,
-# plugins, and themes. Aliases can be placed here, though oh-my-zsh
-# users are encouraged to define aliases within the ZSH_CUSTOM folder.
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-#
+# ==============================================================================
+# INTEGRATIONS
+# ==============================================================================
 
+# iTerm2 shell integration
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh" || true
 
-export ANDROID_HOME=$HOME/Library/Android/Sdk
-export ANDROID_SDK_ROOT=$ANDROID_HOME
-
-export PATH=$PATH:$ANDROID_HOME/platform-tools
-export PATH=$PATH:$ANDROID_HOME/emulator
-export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-export PATH=$PATH:$HOME/.local/bin
-export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
-export PATH="/opt/homebrew/bin:$PATH"
-export PATH="/Applications/Android Studio.app/Contents/MacOS:$PATH"
-
-alias frick=fuck
-
-alias vim="nvim"
-alias vi="nvim"
+# ==============================================================================
+# EDITOR CONFIGURATION
+# ==============================================================================
 
 export EDITOR="nvim"
 export ITERM_ENABLE_SHELL_INTEGRATION_WITH_TMUX=YES
 
-# function that checks out branch of given name pulls it and then checks out the previous branch
+# ==============================================================================
+# ALIASES
+# ==============================================================================
+
+# Vim/Neovim
+alias vim="nvim"
+alias vi="nvim"
+
+# Thefuck alias
+alias frick=fuck
+
+# Dotfiles management
+# Make sure the --git-dir is the same as the directory where you created the repo above
+alias config="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
+
+# Git aliases
+alias gpam='gitPullAndMerge'
+
+# ==============================================================================
+# FUNCTIONS
+# ==============================================================================
+
+# Pull a branch and merge it into the current branch with error handling
 function gitPullAndMerge() {
-  local current_branch=$(git rev-parse --abbrev-ref HEAD)
-  git checkout $1
-  git pull
-  git checkout $current_branch
-  git merge $1
+  if [[ -z "$1" ]]; then
+    echo "Usage: gitPullAndMerge <branch>"
+    return 1
+  fi
+
+  local target_branch="$1"
+  local current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+  if [[ -z "$current_branch" ]]; then
+    echo "Error: Not in a git repository"
+    return 1
+  fi
+
+  if ! git show-ref --verify --quiet "refs/heads/$target_branch" && \
+     ! git show-ref --verify --quiet "refs/remotes/origin/$target_branch"; then
+    echo "Error: Branch '$target_branch' does not exist"
+    return 1
+  fi
+
+  # Check if target branch is checked out in a worktree
+  local worktree_path
+  worktree_path=$(git worktree list --porcelain 2>/dev/null | awk -v branch="$target_branch" '
+    /^worktree / { sub(/^worktree /, ""); wt = $0 }
+    /^branch refs\/heads\// {
+      sub(/^branch refs\/heads\//, "")
+      if ($0 == branch) print wt
+    }')
+
+  if [[ -n "$worktree_path" ]]; then
+    echo "Branch '$target_branch' is checked out in worktree: $worktree_path"
+    echo "Fetching latest changes for $target_branch from origin..."
+    git fetch origin "$target_branch" || return 1
+
+    echo "Merging origin/$target_branch into $current_branch"
+    git merge "origin/$target_branch"
+    return $?
+  fi
+
+  echo "Switching to branch: $target_branch"
+  git checkout "$target_branch" || return 1
+
+  echo "Pulling latest changes..."
+  git pull || {
+    echo "Pull failed, returning to $current_branch"
+    git checkout "$current_branch"
+    return 1
+  }
+
+  echo "Returning to branch: $current_branch"
+  git checkout "$current_branch" || return 1
+
+  echo "Merging $target_branch into $current_branch"
+  git merge "$target_branch"
 }
 
-alias gpam='gitPullAndMerge'
+# Autocomplete for gitPullAndMerge - completes branch names
+_gitPullAndMerge() {
+  local branches
+  branches=(${(f)"$(git branch -a 2>/dev/null | sed 's/^[* ]*//' | sed 's|remotes/origin/||' | sort -u)"})
+  _describe 'branch' branches
+}
+compdef _gitPullAndMerge gitPullAndMerge gpam
+
+# Autocomplete for config alias (dotfiles management)
+_config() {
+  service=git
+  words=('git' "${words[@]:1}")
+  (( CURRENT++ ))
+  _git
+}
+compdef _config config
+
+# ==============================================================================
+# PATH CONFIGURATION
+# ==============================================================================
+
+# Android SDK
+export ANDROID_HOME=$HOME/Library/Android/Sdk
+export ANDROID_SDK_ROOT=$ANDROID_HOME
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+export PATH=$PATH:$ANDROID_HOME/emulator
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+
+# Homebrew
+export PATH="/opt/homebrew/bin:$PATH"
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+
+# Local binaries
+export PATH=$PATH:$HOME/.local/bin
+
+# Android Studio
+export PATH="/Applications/Android Studio.app/Contents/MacOS:$PATH"
+
+# Bun
+export PATH="/Users/gvanderclay/.bun/bin:$PATH"
 
 # pnpm
 export PNPM_HOME="/Users/gvanderclay/Library/pnpm"
 case ":$PATH:" in
-*":$PNPM_HOME:"*) ;;
-*) export PATH="$PNPM_HOME:$PATH" ;;
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
-# pnpm end
 
-# make sure the --git-dir is the same as the
-# directory where you created the repo above.
-alias config="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
-
-
-# Added by LM Studio CLI (lms)
+# LM Studio CLI
 export PATH="$PATH:/Users/gvanderclay/.lmstudio/bin"
-# End of LM Studio CLI section
 
+# Antigravity
+export PATH="/Users/gvanderclay/.antigravity/antigravity/bin:$PATH"
